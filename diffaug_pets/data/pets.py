@@ -22,12 +22,20 @@ def load_raw_pets(data_root: Path):
     )
     return ds_train, ds_test
 
+def norm_breed(name: str) -> str:
+    # "American Bulldog" / "american_bulldog" / "American-Bulldog" -> "american_bulldog"
+    s = name.strip()
+    s = s.replace("-", "_")
+    s = re.sub(r"\s+", "_", s)   # пробелы -> _
+    s = re.sub(r"_+", "_", s)    # схлопнуть __
+    return s.casefold()          # lower + устойчивее
 
-def build_species_by_breed(dataset_root: Path) -> Dict[str, str]:
+def build_species_by_breed(dataset_root) -> Dict[str, str]:
     ann_dir = dataset_root / "oxford-iiit-pet" / "annotations"
     tv = ann_dir / "trainval.txt"
     if not tv.exists():
         return {}
+
     breed2species: Dict[str, str] = {}
     with open(tv, "r") as f:
         for line in f:
@@ -35,15 +43,13 @@ def build_species_by_breed(dataset_root: Path) -> Dict[str, str]:
             if not line or line.startswith("#"):
                 continue
             image_id, _class_id, species, _breed_id = line.split()
-            breed = re.sub(r"_\d+$", "", image_id)
+            breed = re.sub(r"_\d+$", "", image_id)        # e.g. "american_bulldog" / "Abyssinian"
             sp = "cat" if int(species) == 1 else "dog"
-            breed2species[breed] = sp
+            breed2species[norm_breed(breed)] = sp         # <-- нормализуем ключ
     return breed2species
 
-
 def species_token_for_class(class_name: str, breed2species: Dict[str, str]) -> str:
-    return breed2species.get(class_name, "pet")
-
+    return breed2species.get(norm_breed(class_name), "pet")  # <-- нормализуем запрос
 
 def stratified_split(labels: np.ndarray, seed: int, train_frac: float = 0.85):
     idxs = np.arange(len(labels))
