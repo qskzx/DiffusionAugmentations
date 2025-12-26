@@ -29,15 +29,21 @@ def mask_background_from_trimap(trimap: Image.Image, dilate: int = 7) -> Image.I
 
 def trimap_to_fg_alpha(trimap: Image.Image, size: int, feather: int = 11) -> np.ndarray:
     t = _trimap_as_uint8(trimap)
+
     alpha = np.zeros_like(t, dtype=np.float32)
-    alpha[t == 1] = 1.0
-    alpha[t == 3] = 0.5
+    alpha[t == 1] = 1.0      # pet
+    alpha[t == 2] = 0.5      # boundary/unknown
+    alpha[t == 3] = 0.0      # background
+
     alpha = cv2.resize(alpha, (int(size), int(size)), interpolation=cv2.INTER_NEAREST)
+
     if feather and feather > 0:
         k = int(feather)
         k = k if k % 2 == 1 else k + 1
         alpha = cv2.GaussianBlur(alpha, (k, k), 0)
+
     return np.clip(alpha, 0.0, 1.0)
+
 
 
 def composite_fg_bg(orig: Image.Image, gen: Image.Image, alpha_fg: np.ndarray) -> Image.Image:
