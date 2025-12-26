@@ -31,7 +31,7 @@ def class_prompt(class_name: str, species_token_fn: Callable[[str], str], scene:
     scene = scene or random.choice(SCENES)
     return (
         f"a high-quality realistic photo of a {breed} {sp} {scene}, "
-        f"full body, sharp focus, natural lighting, realistic fur"
+        f"sharp focus, natural lighting"
     )
 
 
